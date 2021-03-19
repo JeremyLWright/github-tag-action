@@ -52,17 +52,17 @@ git fetch --tags
 case "$tag_context" in
     *repo*) 
         tag=$(git for-each-ref --sort=-v:refname --format '%(refname)' | cut -d / -f 3- | grep -E "^v?[0-9]+.[0-9]+.[0-9]+\+[0-9]+$" | head -n1)
-		version=$(echo $tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | tail -n1)
-		build_number=$(echo $tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | head -n1)
+		version=$(echo $tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | head -n1)
+		build_number=$(echo $tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | tail -n1)
         pre_tag=$(git for-each-ref --sort=-v:refname --format '%(refname)' | cut -d / -f 3- | grep -E "^v?[0-9]+.[0-9]+.[0-9]+\+[0-9]+(-$suffix.[0-9]+)?$" | head -n1)
         ;;
     *branch*) 
         tag=$(git tag --list --merged HEAD --sort=-v:refname | grep -E "^v?[0-9]+.[0-9]+.[0-9]+$" | head -n1)
-		version=$($tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | tail -n1)
-		build_number=$($tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | head -n1)
+		version=$($tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | head -n1)
+		build_number=$($tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | tail -n1)
         pre_tag=$(git tag --list --merged HEAD --sort=-v:refname | grep -E "^v?[0-9]+.[0-9]+.[0-9]+(-$suffix.[0-9]+)?$" | head -n1)
         ;;
-    * ) echo "Unrecognised context"; exit 1;;
+    * ) echo "Unrecognized context"; exit 1;;
 esac
 
 # if there are none, start tags at INITIAL_VERSION which defaults to 0.0.0
@@ -93,7 +93,9 @@ then
   echo $log
 fi
 
+echo $build_number
 next_build_number=$((build_number + 1))
+echo $next_build_number
 
 case "$log" in
     *#major* ) new=$(semver -i major $version)'+'$next_build_number; part="major";;
