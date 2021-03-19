@@ -105,7 +105,8 @@ case "$log" in
         echo "Default bump was set to none. Skipping..."; exit 0;;
     * ) 
         if [ "$default_semvar_bump" == "none" ]; then
-            echo "Default bump was set to none. Skipping..."; exit 0 
+            echo "Default bump was set to none. Just bumping build number...";
+            new=$version'+'$next_build_number; part=$default_semvar_bump 
         else 
             new=$(semver -i "${default_semvar_bump}" $tag)'+'$next_build_number; part=$default_semvar_bump 
         fi 
