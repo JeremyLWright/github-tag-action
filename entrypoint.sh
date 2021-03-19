@@ -13,6 +13,7 @@ initial_version=${INITIAL_VERSION:-0.0.0}
 tag_context=${TAG_CONTEXT:-repo}
 suffix=${PRERELEASE_SUFFIX:-beta}
 verbose=${VERBOSE:-true}
+build_number=${GITHUB_RUN_NUMBER:-100}
 
 cd ${GITHUB_WORKSPACE}/${source}
 
@@ -27,6 +28,9 @@ echo -e "\tINITIAL_VERSION: ${initial_version}"
 echo -e "\tTAG_CONTEXT: ${tag_context}"
 echo -e "\tPRERELEASE_SUFFIX: ${suffix}"
 echo -e "\tVERBOSE: ${verbose}"
+echo -e "\tINITIAL_BUILD_NUMBER: ${INITIAL_BUILD_NUMBER}"
+echo -e "\tGITHUB_RUN_NUMBER: ${GITHUB_RUN_NUMBER}"
+echo -e "\tBUILD_NUMBER: ${BUILD_NUMBER}"
 
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 
@@ -47,11 +51,15 @@ git fetch --tags
 # get latest tag that looks like a semver (with or without v)
 case "$tag_context" in
     *repo*) 
-        tag=$(git for-each-ref --sort=-v:refname --format '%(refname)' | cut -d / -f 3- | grep -E "^v?[0-9]+.[0-9]+.[0-9]+$" | head -n1)
-        pre_tag=$(git for-each-ref --sort=-v:refname --format '%(refname)' | cut -d / -f 3- | grep -E "^v?[0-9]+.[0-9]+.[0-9]+(-$suffix.[0-9]+)?$" | head -n1)
+        tag=$(git for-each-ref --sort=-v:refname --format '%(refname)' | cut -d / -f 3- | grep -E "^v?[0-9]+.[0-9]+.[0-9]+\+[0-9]+$" | head -n1)
+		version=$($tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | tail -n1)
+		build_number=$($tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | head -n1)
+        pre_tag=$(git for-each-ref --sort=-v:refname --format '%(refname)' | cut -d / -f 3- | grep -E "^v?[0-9]+.[0-9]+.[0-9]+\+[0-9]+(-$suffix.[0-9]+)?$" | head -n1)
         ;;
     *branch*) 
         tag=$(git tag --list --merged HEAD --sort=-v:refname | grep -E "^v?[0-9]+.[0-9]+.[0-9]+$" | head -n1)
+		version=$($tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | tail -n1)
+		build_number=$($tag | awk '{split($0,a,"+"); print a[1]; print a[2]}' | head -n1)
         pre_tag=$(git tag --list --merged HEAD --sort=-v:refname | grep -E "^v?[0-9]+.[0-9]+.[0-9]+(-$suffix.[0-9]+)?$" | head -n1)
         ;;
     * ) echo "Unrecognised context"; exit 1;;
@@ -85,17 +93,19 @@ then
   echo $log
 fi
 
+next_build_number=$((build_number + 1))
+
 case "$log" in
-    *#major* ) new=$(semver -i major $tag); part="major";;
-    *#minor* ) new=$(semver -i minor $tag); part="minor";;
-    *#patch* ) new=$(semver -i patch $tag); part="patch";;
+    *#major* ) new=$(semver -i major $version)'+'$next_build_number; part="major";;
+    *#minor* ) new=$(semver -i minor $version)'+'$next_build_number; part="minor";;
+    *#patch* ) new=$(semver -i patch $version)'+'$next_build_number; part="patch";;
     *#none* ) 
         echo "Default bump was set to none. Skipping..."; exit 0;;
     * ) 
         if [ "$default_semvar_bump" == "none" ]; then
             echo "Default bump was set to none. Skipping..."; exit 0 
         else 
-            new=$(semver -i "${default_semvar_bump}" $tag); part=$default_semvar_bump 
+            new=$(semver -i "${default_semvar_bump}" $tag)'+'$next_build_number; part=$default_semvar_bump 
         fi 
         ;;
 esac
